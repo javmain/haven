@@ -28,8 +28,6 @@ import org.havenapp.main.sensors.motion.Preview;
 public final class CameraFragment extends Fragment {
 
     private Preview preview;
-
-//    private ImageView oldImage;
     private ImageView newImage;
 
     @Override
@@ -38,6 +36,11 @@ public final class CameraFragment extends Fragment {
 
         return inflater.inflate(R.layout.camera_fragment, container, false);
 
+    }
+
+    public void setMotionSensitivity (int threshold)
+    {
+        preview.setMotionSensitivity(threshold);
     }
 
     @Override
@@ -53,14 +56,21 @@ public final class CameraFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
         initCamera ();
+    }
+
+    public void stopCamera ()
+    {
+        if (preview != null) {
+            preview.stopCamera();
+            preview = null;
+        }
     }
 
     public void resetCamera ()
     {
+        stopCamera();
         ((FrameLayout) getActivity().findViewById(R.id.preview)).removeAllViews();
-        preview = null;
         initCamera();
     }
 
@@ -70,14 +80,14 @@ public final class CameraFragment extends Fragment {
 
             PreferenceManager prefs = new PreferenceManager(getActivity());
 
-            if (prefs.getCameraSensitivity() != PreferenceManager.OFF) {
+            if (prefs.getCameraActivation()) {
                 //Uncomment to see the camera
                 preview = new Preview(getActivity());
 
                 ((FrameLayout) getActivity().findViewById(R.id.preview)).addView(preview);
 
                 // oldImage = (ImageView) getActivity().findViewById(R.id.old_image);
-                newImage = (ImageView) getActivity().findViewById(R.id.new_image);
+                newImage = getActivity().findViewById(R.id.new_image);
 
                 preview.addListener(new MotionAsyncTask.MotionListener() {
 
@@ -85,6 +95,10 @@ public final class CameraFragment extends Fragment {
                                           boolean motionDetected) {
                         int rotation = 0;
                         boolean reflex = false;
+
+                        if (preview == null)
+                            return;
+
                         if (preview.getCameraFacing() == Camera.CameraInfo.CAMERA_FACING_BACK) {
                             rotation = 90;
                         } else {
@@ -99,6 +113,12 @@ public final class CameraFragment extends Fragment {
             }
         }
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
     public void onSensorChanged(SensorEvent event) {
 
     }

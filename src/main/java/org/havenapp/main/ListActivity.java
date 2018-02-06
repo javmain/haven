@@ -17,33 +17,26 @@
 
 package org.havenapp.main;
 
-import android.database.sqlite.SQLiteException;
-import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.RecyclerView;
-
-
-import org.havenapp.main.model.Event;
-import org.havenapp.main.model.EventTrigger;
-import org.havenapp.main.ui.EventActivity;
-import org.havenapp.main.ui.EventAdapter;
-import org.havenapp.main.ui.PPAppIntro;
-
-
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.database.sqlite.SQLiteException;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.telephony.SmsManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -52,27 +45,34 @@ import android.view.View;
 import com.mikepenz.aboutlibraries.Libs;
 import com.mikepenz.aboutlibraries.LibsBuilder;
 
+import org.havenapp.main.model.Event;
+import org.havenapp.main.model.EventTrigger;
+import org.havenapp.main.service.SignalSender;
+import org.havenapp.main.ui.EventActivity;
+import org.havenapp.main.ui.EventAdapter;
+import org.havenapp.main.ui.PPAppIntro;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-
+import java.util.StringTokenizer;
 
 public class ListActivity extends AppCompatActivity {
 
-    RecyclerView recyclerView;
-    FloatingActionButton fab;
-    Toolbar toolbar;
-    EventAdapter adapter;
-    List<Event> events = new ArrayList<>();
+    private RecyclerView recyclerView;
+    private FloatingActionButton fab;
+    private Toolbar toolbar;
+    private EventAdapter adapter;
+    private List<Event> events = new ArrayList<>();
+    private PreferenceManager preferences;
 
-    long initialCount;
+    private long initialCount;
 
-    int modifyPos = -1;
+    private int modifyPos = -1;
 
-    int REQUEST_CODE_INTRO = 1001;
+    private int REQUEST_CODE_INTRO = 1001;
 
 
     private Handler handler = new Handler();
@@ -83,9 +83,10 @@ public class ListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_list);
         Log.d("Main", "onCreate");
 
-        recyclerView = (RecyclerView) findViewById(R.id.main_list);
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        preferences = new PreferenceManager(this.getApplicationContext());
+        recyclerView = findViewById(R.id.main_list);
+        fab = findViewById(R.id.fab);
+        toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         LinearLayoutManager llm = new LinearLayoutManager(this);
@@ -124,7 +125,7 @@ public class ListActivity extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
 
-            Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_arrow_forward_white);
+            Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_play_arrow);
             drawable = DrawableCompat.wrap(drawable);
             DrawableCompat.setTint(drawable, Color.WHITE);
             DrawableCompat.setTintMode(drawable, PorterDuff.Mode.SRC_IN);
@@ -146,18 +147,18 @@ public class ListActivity extends AppCompatActivity {
 
         initialCount = Event.count(Event.class);
 
-        if (initialCount <= 0) {
+        if (preferences.isFirstLaunch()) {
+            showOnboarding();
+        }
 
-           showOnboarding();
-
-        } else {
-            recyclerView.setVisibility(View.VISIBLE);
+        if (initialCount > 0) {
             findViewById(R.id.empty_view).setVisibility(View.GONE);
         }
 
         try {
             events = Event.listAll(Event.class, "id DESC");
             adapter = new EventAdapter(ListActivity.this, events);
+            recyclerView.setVisibility(View.VISIBLE);
             recyclerView.setAdapter(adapter);
 
 
@@ -224,6 +225,7 @@ public class ListActivity extends AppCompatActivity {
 
         if (requestCode == REQUEST_CODE_INTRO)
         {
+            preferences.setFirstLaunch(false);
             Intent i = new Intent(ListActivity.this, MonitorActivity.class);
             startActivity(i);
         }
@@ -327,6 +329,9 @@ public class ListActivity extends AppCompatActivity {
             case R.id.action_licenses:
                 showLicenses();
                 break;
+            case R.id.action_test_notification:
+                testNotifications();
+                break;
         }
         return true;
     }
@@ -341,5 +346,25 @@ public class ListActivity extends AppCompatActivity {
                 .withAboutAppName(getString(R.string.app_name))
                                 //start the activity
                 .start(this);
+    }
+
+    private void testNotifications ()
+    {
+
+        if (!TextUtils.isEmpty(preferences.getSignalUsername())) {
+            SignalSender sender = SignalSender.getInstance(this, preferences.getSignalUsername().trim());
+            ArrayList<String> recip = new ArrayList<>();
+            recip.add(preferences.getSmsNumber());
+            sender.sendMessage(recip, getString(R.string.signal_test_message), null);
+        }
+        else if (!TextUtils.isEmpty(preferences.getSmsNumber())) {
+
+            SmsManager manager = SmsManager.getDefault();
+
+            StringTokenizer st = new StringTokenizer(preferences.getSmsNumber(),",");
+            while (st.hasMoreTokens())
+                manager.sendTextMessage(st.nextToken(), null, getString(R.string.signal_test_message), null, null);
+
+        }
     }
 }

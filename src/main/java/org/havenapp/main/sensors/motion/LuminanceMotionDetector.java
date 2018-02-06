@@ -24,30 +24,15 @@ public class LuminanceMotionDetector implements IMotionDetector {
 	/**
 	 * Levels of motion detection
 	 */
-	public static final int MOTION_LOW = 0;
-	public static final int MOTION_MEDIUM = 1;
-	public static final int MOTION_HIGH = 2;
-	
+	public static final int MOTION_MEDIUM = 30000;
+
 	/**
 	 * Sets different sensitivity for the algorithm
 	 * @param thresh sensitivity identifier
 	 */	
 	public void setThreshold(int thresh) {
-		switch(thresh) {
-		case MOTION_LOW:
-			VALUE_THRESHOLD = 60;
-			NUMBER_THRESHOLD = 20000;
-			break;
-		case MOTION_MEDIUM:
-			VALUE_THRESHOLD = 50;
-			NUMBER_THRESHOLD = 10000;
-			break;
-		case MOTION_HIGH:
-			VALUE_THRESHOLD = 20;
-			NUMBER_THRESHOLD = 2000;
-			break;
-		}
-		
+		NUMBER_THRESHOLD = thresh;
+		VALUE_THRESHOLD = thresh/1000;
 	}
 
 	/*
@@ -59,7 +44,7 @@ public class LuminanceMotionDetector implements IMotionDetector {
 		if (oldImage == null || newImage == null) throw new NullPointerException();
 		if (oldImage.length != newImage.length) throw new IllegalArgumentException();
 		
-		ArrayList<Integer> differentPixels = new ArrayList<Integer>();	
+		ArrayList<Integer> differentPixels = new ArrayList<>();
 		int differentPixelNumber = 0;
 		for (int ij=0; ij < height*width; ij++) {
 		  int newPixelValue = newImage[ij];

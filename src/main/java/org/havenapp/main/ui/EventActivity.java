@@ -12,14 +12,15 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.view.MenuItem;
 import android.view.View;
-
-import java.io.File;
-import java.util.ArrayList;
 
 import org.havenapp.main.R;
 import org.havenapp.main.model.Event;
 import org.havenapp.main.model.EventTrigger;
+
+import java.io.File;
+import java.util.ArrayList;
 
 public class EventActivity extends AppCompatActivity {
 
@@ -34,8 +35,9 @@ public class EventActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         StrictMode.setVmPolicy(StrictMode.VmPolicy.LAX);
 
@@ -44,7 +46,7 @@ public class EventActivity extends AppCompatActivity {
         if (eventId != -1) {
 
             mEvent = Event.findById(Event.class, eventId);
-            mRecyclerView = (RecyclerView)findViewById(R.id.event_trigger_list);
+            mRecyclerView = findViewById(R.id.event_trigger_list);
 
             setTitle(mEvent.getStartTime().toLocaleString());
 
@@ -54,7 +56,7 @@ public class EventActivity extends AppCompatActivity {
             mRecyclerView.setLayoutManager(llm);
             mRecyclerView.setAdapter(mAdapter);
 
-            FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+            FloatingActionButton fab = findViewById(R.id.fab);
             fab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -92,6 +94,17 @@ public class EventActivity extends AppCompatActivity {
         }
         else
             finish();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     private void deleteEventTrigger (final EventTrigger eventTrigger, final int position)
@@ -139,7 +152,7 @@ public class EventActivity extends AppCompatActivity {
         emailIntent.putExtra(Intent.EXTRA_SUBJECT, title);
         emailIntent.putExtra(Intent.EXTRA_TEXT, generateLog());
         //has to be an ArrayList
-        ArrayList<Uri> uris = new ArrayList<Uri>();
+        ArrayList<Uri> uris = new ArrayList<>();
         //convert from paths to Android friendly Parcelable Uri's
         for (EventTrigger trigger : mEvent.getEventTriggers())
         {
@@ -153,17 +166,17 @@ public class EventActivity extends AppCompatActivity {
     }
 
     private String generateLog () {
-        StringBuffer mEventLog = new StringBuffer();
+        StringBuilder mEventLog = new StringBuilder();
 
         setTitle("Event @ " + mEvent.getStartTime().toLocaleString());
 
         for (EventTrigger eventTrigger : mEvent.getEventTriggers()) {
 
-            mEventLog.append("Event Triggered @ " + eventTrigger.getTriggerTime().toLocaleString()).append("\n");
+            mEventLog.append("Event Triggered @ ").append(eventTrigger.getTriggerTime().toString()).append("\n");
 
             String sType = eventTrigger.getStringType(this);
 
-            mEventLog.append("Event Type: " + sType);
+            mEventLog.append("Event Type: ").append(sType);
             mEventLog.append("\n==========================\n");
         }
 

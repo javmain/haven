@@ -18,6 +18,7 @@
 package org.havenapp.main;
 
 import android.support.multidex.MultiDexApplication;
+import android.support.v7.app.AppCompatDelegate;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -34,9 +35,9 @@ public class HavenApp extends MultiDexApplication {
     /*
     ** Onion-available Web Server for optional remote access
      */
-    WebServer mOnionServer = null;
+    private WebServer mOnionServer = null;
 
-    PreferenceManager mPrefs = null;
+    private PreferenceManager mPrefs = null;
 
     @Override
     public void onCreate() {
@@ -46,6 +47,7 @@ public class HavenApp extends MultiDexApplication {
 
         Fresco.initialize(this);
         SugarContext.init(this);
+        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
 
         if (mPrefs.getRemoteAccessActive())
             startServer();
@@ -58,10 +60,7 @@ public class HavenApp extends MultiDexApplication {
         if (mOnionServer == null || (!mOnionServer.isAlive()))
         {
             try {
-                mOnionServer = new WebServer(this);
-
-                if (!TextUtils.isEmpty(mPrefs.getRemoteAccessCredential()))
-                    mOnionServer.setPassword(mPrefs.getRemoteAccessCredential());
+                mOnionServer = new WebServer(this, mPrefs.getRemoteAccessCredential());
             } catch (IOException ioe) {
                 Log.e("OnioNServer", "unable to start onion server", ioe);
             }
